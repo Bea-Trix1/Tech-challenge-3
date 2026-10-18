@@ -1,0 +1,17 @@
+# Airflow local (standalone) para rodar a DAG de retreino.
+# Uso: docker compose -f docker/airflow/docker-compose.yml up
+# UI em http://localhost:8080 (usuário admin; senha impressa no log do container).
+services:
+  airflow:
+    image: apache/airflow:3.3.2-python3.11
+    command: standalone
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/project/dags
+      PYTHONPATH: /opt/project
+      # ponytail: deps instaladas no boot (lento); trocar por imagem própria se for para produção
+      _PIP_ADDITIONAL_REQUIREMENTS: "scikit-learn>=1.5 skl2onnx>=1.18 pandas>=2.2"
+    volumes:
+      - ../..:/opt/project
