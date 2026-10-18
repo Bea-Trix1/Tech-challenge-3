@@ -5,6 +5,8 @@ on:
     branches: [main, "feature/**", "fix/**"]
   pull_request:
     branches: [main]
+    # "edited" revalida o título do PR quando ele é alterado
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
