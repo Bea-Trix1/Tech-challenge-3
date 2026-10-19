@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+**/__pycache__
+data
+mlruns
+notebooks
+tests
+metrics
+models/*.joblib
+*.pdf
