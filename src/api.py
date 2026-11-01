@@ -10,9 +10,12 @@ from functools import lru_cache
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
+from starlette.responses import Response
 
 from src.export_onnx import ONNX_PATH
+from src.monitoring import MetricsMiddleware
 
 
 class PredictRequest(BaseModel):
@@ -41,6 +44,12 @@ def predict(text: str) -> PredictResponse:
 
 
 app = FastAPI(title="Triagem de Laudos", version="0.1.0")
+app.add_middleware(MetricsMiddleware)
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    return Response(generate_latest(), headers={"Content-Type": CONTENT_TYPE_LATEST})
 
 
 @app.get("/health")
