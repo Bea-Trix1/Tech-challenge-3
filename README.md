@@ -78,6 +78,23 @@ curl -X POST localhost:8000/predict -H "Content-Type: application/json" \
   -d '{"text": "Metastatic breast carcinoma treated with chemotherapy"}'
 ```
 
+### Latência da API
+
+A API mede a própria latência (em `src/api.py`):
+
+- `X-Inference-Time-Ms`: só a inferência ONNX, devolvido em cada `/predict`;
+- `X-Process-Time-Ms`: requisição HTTP completa, devolvido em qualquer rota;
+- `GET /metrics/latency`: P50/P95/P99 das últimas `LATENCY_WINDOW` (default 1000) requisições.
+
+```bash
+docker compose -f docker/fastapi/docker-compose.yml up --build
+curl -s localhost:8000/metrics/latency | jq
+```
+
+O container de serving usa 1 worker, `ORT_INTRA_OP_THREADS=1`, sem `--reload`, monta
+`models/` como somente leitura (o modelo retreinado pelo Airflow é servido sem rebuild) e
+instala só `fastapi`, `uvicorn`, `onnxruntime` e `numpy`.
+
 ### Airflow (retreino)
 
 ```bash

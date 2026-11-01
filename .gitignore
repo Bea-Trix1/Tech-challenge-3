@@ -223,3 +223,6 @@ __marimo__/
 data/raw/
 data/processed/
 models/*.joblib
+
+#doc_adhoc
+instrucao.md

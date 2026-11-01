@@ -1,0 +1,20 @@
+
+# API de inferência (produção local). Build a partir da raiz do repositório.
+# Uso: docker compose -f docker/fastapi/docker-compose.yml up --build
+services:
+  fastapi:
+    build:
+      context: ../..
+      dockerfile: docker/fastapi/dockerfile
+    image: triagem-api:latest
+    container_name: mlflow-fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_PATH: /app/models/model.onnx
+      ORT_INTRA_OP_THREADS: "1"
+      LATENCY_WINDOW: "1000"
+    volumes:
+      # Modelo vem do host: o retreino da DAG do Airflow é servido sem rebuild da imagem.
+      - ../../models:/app/models:ro
+    restart: unless-stopped
