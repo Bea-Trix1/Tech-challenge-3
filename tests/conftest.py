@@ -39,4 +39,3 @@ def use_dummy_onnx(onnx_path, monkeypatch):
     api.reset_model_cache()
     yield
     api.reset_model_cache()
-    api.get_session.cache_clear()

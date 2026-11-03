@@ -93,7 +93,7 @@ curl -s localhost:8000/metrics/latency | jq
 
 O container de serving usa 1 worker, `ORT_INTRA_OP_THREADS=1`, sem `--reload`, monta
 `models/` como somente leitura (o modelo retreinado pelo Airflow é servido sem rebuild) e
-instala só `fastapi`, `uvicorn`, `onnxruntime` e `numpy`.
+usa a mesma imagem do `docker/Dockerfile` (a que o CI testa).
 
 ### Airflow (retreino)
 
