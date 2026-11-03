@@ -1,0 +1,6 @@
+# Dependências mínimas para servir o ONNX via FastAPI e medir latência.
+# NÃO adicione mlflow/pandas/scikit-learn/skl2onnx aqui: o treino roda no Airflow.
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+onnxruntime>=1.20,<2.0
+numpy>=1.24,<3.0
