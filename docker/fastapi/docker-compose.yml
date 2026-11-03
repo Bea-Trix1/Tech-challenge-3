@@ -1,13 +1,12 @@
-
 # API de inferência (produção local). Build a partir da raiz do repositório.
 # Uso: docker compose -f docker/fastapi/docker-compose.yml up --build
 services:
   fastapi:
     build:
       context: ../..
-      dockerfile: docker/fastapi/dockerfile
+      dockerfile: docker/Dockerfile
     image: triagem-api:latest
-    container_name: mlflow-fastapi
+    container_name: triagem-api
     ports:
       - "8000:8000"
     environment:
