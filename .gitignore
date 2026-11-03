@@ -241,3 +241,6 @@ models/*.joblib
 
 # Relatório de trabalho local, com diagnóstico específico deste checkout
 /AUDITORIA_PENDENCIAS.md
+
+#doc_adhoc
+instrucao.md

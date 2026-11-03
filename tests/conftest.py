@@ -36,6 +36,6 @@ def onnx_path(dummy_model, tmp_path_factory):
 @pytest.fixture
 def use_dummy_onnx(onnx_path, monkeypatch):
     monkeypatch.setenv("MODEL_PATH", str(onnx_path))
-    api.get_session.cache_clear()
+    api.reset_model_cache()
     yield
-    api.get_session.cache_clear()
+    api.reset_model_cache()

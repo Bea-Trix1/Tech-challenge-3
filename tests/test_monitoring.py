@@ -32,14 +32,14 @@ def test_metrics_records_predictions_and_validation_errors(use_dummy_onnx):
     assert 'route="/metrics"' not in response.text
 
 
-def test_unhandled_error_is_counted(monkeypatch):
+def test_unhandled_error_is_counted(monkeypatch, use_dummy_onnx):
     def fail(_text):
         raise RuntimeError("Falha simulada")
 
-    monkeypatch.setattr(api, "predict", fail)
     labels = {"method": "POST", "route": "/predict", "status": "500"}
     before = count("triagem_http_requests_total", labels)
     with TestClient(api.app, raise_server_exceptions=False) as client:
+        monkeypatch.setattr(api, "predict", fail)
         assert client.post("/predict", json={"text": "example"}).status_code == 500
     assert count("triagem_http_requests_total", labels) == before + 1
 
