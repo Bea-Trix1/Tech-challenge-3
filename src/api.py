@@ -21,7 +21,10 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
+
+from src.monitoring import MetricsMiddleware
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -150,6 +153,12 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Triagem de Laudos", version="0.1.0", lifespan=lifespan)
+app.add_middleware(MetricsMiddleware)
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    return Response(generate_latest(), headers={"Content-Type": CONTENT_TYPE_LATEST})
 
 
 @app.middleware("http")

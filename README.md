@@ -13,6 +13,9 @@ src/api.py           # FastAPI: GET /health, POST /predict
 dags/train_pipeline.py        # DAG Airflow: ler_csv -> treinar -> salvar_modelo
 docker/Dockerfile             # imagem da API
 docker/airflow/docker-compose.yml  # Airflow local para rodar a DAG
+docker-compose.yml           # API + Prometheus + Grafana
+monitoring/                  # coleta, datasource e dashboard provisionados
+scripts/generate_traffic.py  # chamadas válidas e erros 422 para demonstração
 .github/workflows/ci.yml      # CI: lint -> test -> build (+ título de PR semântico)
 ```
 
@@ -116,3 +119,79 @@ métricas no próprio repositório montado. Para testar sem a UI:
 4. **pr-title**: valida o título do PR no padrão Conventional Commits
 
 O padrão de commits e as regras de PR estão em [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Monitoramento local: Prometheus + Grafana
+
+Na raiz do repositório, com o Docker em execução:
+
+```bash
+docker compose up --build -d --wait
+docker compose ps
+python3 scripts/generate_traffic.py
+```
+
+Se já houver uma API usando a porta 8000, pare esse container/processo antes de subir
+a stack. O modelo ONNX versionado é usado pela API; não é necessário treinar novamente.
+
+| Serviço | Endereço | Acesso |
+|---|---|---|
+| API / Swagger | http://localhost:8000/docs | Sem autenticação local |
+| Métricas | http://localhost:8000/metrics | Formato Prometheus |
+| Prometheus | http://localhost:9090/targets | Target `triagem-api` deve estar `UP` |
+| Grafana | http://localhost:3000/d/triagem-api | Usuário `admin`, senha inicial `admin` |
+
+Para escolher outra senha inicial, execute `GRAFANA_ADMIN_PASSWORD=sua-senha docker compose up --build -d --wait`
+na primeira inicialização. O Grafana persiste usuários e senha no volume; alterar essa
+variável após criar o volume não redefine uma senha existente. Os três serviços são
+publicados somente em localhost.
+
+O datasource Prometheus e o dashboard **Triagem de Laudos — API**, na pasta
+**Tech Challenge**, são provisionados automaticamente a partir de `monitoring/grafana/`.
+O dashboard contém três painéis, todos filtrados para `/predict`:
+
+1. Total de requisições por status HTTP, desde o início do processo da API.
+2. Latência HTTP P50/P95, em segundos, estimada pelo histograma.
+3. Taxa de erro: proporção de respostas 4xx e 5xx sobre o total de chamadas.
+
+A API expõe `triagem_http_requests_total` (método, rota e status) e
+`triagem_http_request_duration_seconds` (método e rota). A medição inclui validação,
+inferência e envio da resposta. `/metrics` é excluído para que a coleta não gere seu
+próprio tráfego; rotas inexistentes compartilham o rótulo `unmatched`. Textos dos laudos
+não são colocados nos rótulos. Mantenha um processo Uvicorn por container nesta
+configuração, pois os contadores ficam na memória do processo.
+
+### Demonstração e evidência da entrega
+
+O script usa apenas a biblioteca padrão do Python. Por padrão, faz 300 chamadas em
+cerca de 150 segundos: 270 predições válidas (HTTP 200) e 30 entradas vazias, que devem
+retornar HTTP 422. Esses erros de validação são intencionais para preencher o painel
+de taxa de erro. Uma resposta inesperada faz o script terminar com erro.
+
+```bash
+python3 scripts/generate_traffic.py --requests 300 --interval 0.5
+curl http://localhost:8000/metrics
+```
+
+A coleta ocorre a cada cinco segundos. Aguarde ao menos duas coletas após iniciar o
+tráfego para visualizar taxas e percentis; o Grafana atualiza a cada cinco segundos.
+Durante tráfego contínuo, a taxa de erro deve ficar próxima de 10%. Após o fim das
+chamadas, a taxa cai para zero quando a janela de cálculo deixa de conter tráfego.
+O total pode incluir chamadas de execuções anteriores; os contadores zeram ao reiniciar
+a API. O healthcheck usa `/health`, que não entra nos painéis filtrados para `/predict`.
+
+Para a entrega, o JSON está em
+[`monitoring/grafana/dashboards/triagem.json`](monitoring/grafana/dashboards/triagem.json).
+Abra o dashboard durante o tráfego para capturar um print ou demonstrá-lo no vídeo.
+As configurações seguem a documentação de
+[histogramas do cliente Prometheus](https://prometheus.github.io/client_python/instrumenting/histogram/)
+e [provisionamento do Grafana](https://grafana.com/docs/grafana/latest/administration/provisioning/).
+
+Para inspecionar problemas e encerrar os serviços:
+
+```bash
+docker compose logs --tail=100 api prometheus grafana
+docker compose down
+```
+
+O encerramento preserva os volumes de métricas e do Grafana. O Compose do Airflow
+continua separado em `docker/airflow/docker-compose.yml`.
